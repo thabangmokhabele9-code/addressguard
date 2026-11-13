@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1220">
+  <meta name="description" content="AddressGuard compares Solana wallet addresses and highlights mismatches before you use an address.">
+  <title>AddressGuard — Solana Address Checker</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg:#080e19; --panel:#101a2b; --panel2:#0c1524; --line:#24344b;
+      --text:#edf4ff; --muted:#9babc2; --blue:#4d91ff; --blue2:#2466d1;
+      --green:#36d399; --amber:#f6bd4b; --red:#ff667a;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing:border-box }
+    body { margin:0; min-height:100vh; color:var(--text); background:radial-gradient(ellipse at 50% -20%, #18345e 0%, transparent 48%),var(--bg); }
+    button,input { font:inherit }
+    .wrap { width:min(100% - 32px, 760px); margin:0 auto; padding:26px 0 42px }
+    header { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:34px }
+    .brand { display:flex; align-items:center; gap:11px; font-weight:800; letter-spacing:-.5px; font-size:19px }
+    .logo { width:40px;height:40px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(145deg,#367ff0,#1b4da4);box-shadow:0 8px 24px #1c5ac055 }
+    .logo svg { width:24px;height:24px }
+    .network { border:1px solid #31517a; color:#b9d5ff; background:#102440; border-radius:999px; padding:7px 11px; font-size:12px; font-weight:700 }
+    .hero { text-align:center; margin:0 auto 27px; max-width:600px }
+    .eyebrow { color:#83b5ff; font-size:11px; text-transform:uppercase; letter-spacing:1.7px; font-weight:800 }
+    h1 { font-size:clamp(30px,7vw,46px); letter-spacing:-1.8px; margin:10px 0 11px; line-height:1.06 }
+    .hero p { color:var(--muted); line-height:1.6; margin:0; font-size:15px }
+    .card { background:linear-gradient(180deg,#111d30,#0d1727); border:1px solid var(--line); border-radius:20px; padding:clamp(17px,4vw,26px); box-shadow:0 18px 55px #0005 }
+    .field { margin-bottom:19px }
+    .labelrow { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:9px }
+    label { font-size:13px; font-weight:750 }
+    .hint { color:var(--muted); font-size:11px }
+    textarea { width:100%; min-height:91px; resize:vertical; border:1px solid #2a3c55; border-radius:12px; background:#091321; color:var(--text); padding:14px; outline:none; line-height:1.5; font-size:13px; overflow-wrap:anywhere }
+    textarea:focus { border-color:var(--blue); box-shadow:0 0 0 3px #3985e822 }
+    textarea::placeholder { color:#61728b }
+    .actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:4px }
+    button { border:0; border-radius:11px; padding:13px 17px; cursor:pointer; font-weight:800; transition:transform .12s,filter .12s }
+    button:active { transform:scale(.985) }
+    .primary { background:linear-gradient(135deg,#438fff,#2868d4); color:white; flex:1; min-width:180px; box-shadow:0 8px 22px #2868d433 }
+    .secondary { background:#19283d; color:#d7e5fa; border:1px solid #30445f }
+    button:hover { filter:brightness(1.1) }
+    .result { display:none; margin-top:18px; border-radius:14px; padding:17px; border:1px solid var(--line); background:#0a1422 }
+    .result.show { display:block }
+    .result-head { display:flex; gap:12px; align-items:flex-start }
+    .status-icon { width:36px;height:36px; flex:none; display:grid;place-items:center;border-radius:11px;font-size:19px;font-weight:900 }
+    .result h2 { font-size:16px; margin:1px 0 5px }
+    .result p { margin:0; color:#b5c3d7; font-size:13px; line-height:1.55 }
+    .success { border-color:#236c57; background:#0b201e }
+    .success .status-icon { background:#123d32;color:var(--green) }
+    .warning { border-color:#765b28; background:#241e12 }
+    .warning .status-icon { background:#493718;color:var(--amber) }
+    .danger { border-color:#713442; background:#26151d }
+    .danger .status-icon { background:#4b202e;color:var(--red) }
+    .neutral { border-color:#3a4d68 }
+    .neutral .status-icon { background:#1d304a;color:#a9caff }
+    .diffbox { margin-top:14px; border-top:1px solid #ffffff18; padding-top:12px }
+    .diffbox strong { display:block; font-size:11px; color:#aebdd1; margin-bottom:7px }
+    .addressline { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; line-height:1.8; overflow-wrap:anywhere; color:#dce8f8 }
+    .changed { background:#7b2639; color:#fff; border-radius:3px; padding:1px 0 }
+    .meter { display:flex; gap:3px; height:5px; margin-top:10px }
+    .meter span { height:100%; background:#30445f; flex:1; border-radius:4px }
+    .meter span.on { background:var(--amber) }
+    .note { color:#91a3bb; font-size:11px; line-height:1.55; margin-top:18px }
+    .info { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:15px }
+    .info div { border:1px solid #24344b; border-radius:12px; padding:12px; background:#0c1625 }
+    .info b { display:block; font-size:12px; margin-bottom:5px }
+    .info span { display:block; color:var(--muted); font-size:11px; line-height:1.45 }
+    .how { margin-top:20px }
+    .how h3 { font-size:14px; margin:0 0 12px }
+    .steps { display:grid; gap:10px }
+    .step { display:flex; gap:11px; align-items:flex-start; color:#b7c5d8; font-size:12px; line-height:1.5 }
+    .num { width:23px;height:23px;flex:none;display:grid;place-items:center;border-radius:8px;background:#1a355a;color:#a9ccff;font-weight:800 }
+    footer { text-align:center; color:#70829b; font-size:11px; margin-top:24px; line-height:1.6 }
+    .sr { position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0 }
+    @media(max-width:520px) { .wrap{width:min(100% - 22px,760px);padding-top:17px} header{margin-bottom:27px} .info{grid-template-columns:1fr} .actions button{width:100%} }
+  </style>
+
+  <meta name="theme-color" content="#080e19">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+</head>
+<body>
+  <main class="wrap">
+    <header>
+      <div class="brand">
+        <div class="logo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 2.8 20 6v5.4c0 5.1-3.4 8.3-8 9.8-4.6-1.5-8-4.7-8-9.8V6l8-3.2Z" stroke="white" stroke-width="1.7"/><path d="m8.2 12.1 2.4 2.4 5.3-5.3" stroke="white" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <span>AddressGuard</span>
+      </div>
+      <div class="network">SOLANA · MAINNET ADDRESSES</div>
+    </header>
+
+    <section class="hero">
+      <div class="eyebrow">Check before you send</div>
+      <h1>Make sure the<br>addresses match.</h1>
+      <p>Compare the recipient address you independently verified with the address you are about to use.</p>
+    </section>
+
+    <section class="card" aria-label="Address comparison tool">
+      <div class="field">
+        <div class="labelrow">
+          <label for="trusted">1. Trusted recipient address</label>
+          <span class="hint">Verify it independently</span>
+        </div>
+        <textarea id="trusted" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="Paste the recipient address you verified"></textarea>
+      </div>
+      <div class="field">
+        <div class="labelrow">
+          <label for="candidate">2. Address to check</label>
+          <span class="hint">The address you copied</span>
+        </div>
+        <textarea id="candidate" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="Paste the address you are about to use"></textarea>
+      </div>
+      <div class="actions">
+        <button class="primary" id="compare">Compare addresses</button>
+        <button class="secondary" id="clear" type="button">Clear</button>
+      </div>
+      <div id="result" class="result" role="status" aria-live="polite"></div>
+      <p class="note">Privacy: comparisons run in this browser. This page does not connect to a wallet, submit transactions, or send the addresses to a server.</p>
+    </section>
+
+    <section class="info" aria-label="What this checker does">
+      <div><b>Full comparison</b><span>Checks every character, not just the visible beginning and end.</span></div>
+      <div><b>Format validation</b><span>Checks Base58 decoding and the 32-byte Solana address length.</span></div>
+      <div><b>Clear warnings</b><span>Highlights mismatches and possible look-alike patterns.</span></div>
+    </section>
+
+    <section class="card how">
+      <h3>Use it carefully</h3>
+      <div class="steps">
+        <div class="step"><span class="num">1</span><span>Get the trusted recipient address from the person or official source through a separate, trusted channel.</span></div>
+        <div class="step"><span class="num">2</span><span>Paste both complete addresses into the fields above.</span></div>
+        <div class="step"><span class="num">3</span><span>If they differ, stop and verify the recipient before doing anything else.</span></div>
+      </div>
+    </section>
+
+    <footer>
+      AddressGuard is an address comparison utility, not an identity or scam-detection service.<br>
+      An exact match does not prove who controls an address or guarantee that a transaction is safe.
+    </footer>
+  </main>
+
+<script>
+(() => {
+  const alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+  const trustedEl = document.getElementById("trusted");
+  const candidateEl = document.getElementById("candidate");
+  const resultEl = document.getElementById("result");
+
+  function decodeBase58(value) {
+    if (!value || [...value].some(ch => !alphabet.includes(ch))) return null;
+    let bytes = [0];
+    for (const char of value) {
+      let carry = alphabet.indexOf(char);
+      for (let j = 0; j < bytes.length; j++) {
+        carry += bytes[j] * 58;
+        bytes[j] = carry & 255;
+        carry >>= 8;
+      }
+      while (carry > 0) {
+        bytes.push(carry & 255);
+        carry >>= 8;
+      }
+    }
+    // Leading "1" characters represent leading zero bytes.
+    let leadingZeroes = 0;
+    while (leadingZeroes < value.length && value[leadingZeroes] === "1") leadingZeroes++;
+    const significant = (bytes[bytes.length - 1] === 0 && bytes.length === 1) ? [] : bytes.reverse();
+    return new Uint8Array([...new Array(leadingZeroes).fill(0), ...significant]);
+  }
+
+  function normalizedAddress(input) {
+    const value = input.trim();
+    if (!value) return { ok: false, reason: "empty" };
+    const decoded = decodeBase58(value);
+    if (!decoded) return { ok: false, reason: "base58" };
+    if (decoded.length !== 32) return { ok: false, reason: "length" };
+    return { ok: true, value };
+  }
+
+  function commonPrefix(a, b) {
+    let i = 0;
+    while (i < Math.min(a.length, b.length) && a[i] === b[i]) i++;
+    return i;
+  }
+  function commonSuffix(a, b, prefix) {
+    let i = 0;
+    while (i < Math.min(a.length, b.length) - prefix && a[a.length - 1 - i] === b[b.length - 1 - i]) i++;
+    return i;
+  }
+  function escapeHtml(s) {
+    return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function highlighted(a, b) {
+    let out = "";
+    for (let i = 0; i < a.length; i++) {
+      const c = escapeHtml(a[i]);
+      out += a[i] === b[i] ? c : `<span class="changed">${c}</span>`;
+    }
+    return out;
+  }
+  function show(kind, icon, title, message, extra = "") {
+    resultEl.className = `result show ${kind}`;
+    resultEl.innerHTML = `<div class="result-head"><div class="status-icon" aria-hidden="true">${icon}</div><div><h2>${title}</h2><p>${message}</p></div></div>${extra}`;
+    resultEl.scrollIntoView({behavior:"smooth", block:"nearest"});
+  }
+
+  document.getElementById("compare").addEventListener("click", () => {
+    const a = normalizedAddress(trustedEl.value);
+    const b = normalizedAddress(candidateEl.value);
+    if (!a.ok || !b.ok) {
+      const reason = r => r.reason === "empty" ? "is missing" :
+        r.reason === "base58" ? "contains characters that are not valid Base58" :
+        "does not decode to a 32-byte Solana address";
+      let msg = [];
+      if (!a.ok) msg.push("Trusted recipient address " + reason(a) + ".");
+      if (!b.ok) msg.push("Address to check " + reason(b) + ".");
+      show("danger", "!", "INVALID ADDRESS", msg.join(" "));
+      return;
+    }
+    if (a.value === b.value) {
+      show("success", "✓", "EXACT MATCH", "Both complete addresses are identical. This confirms only that the two entries match — it does not verify the recipient's identity or guarantee transaction safety.");
+      return;
+    }
+    const prefix = commonPrefix(a.value, b.value);
+    const suffix = commonSuffix(a.value, b.value, prefix);
+    const closeLookalike = prefix >= 4 && suffix >= 4;
+    const extra = `<div class="diffbox"><strong>TRUSTED ADDRESS — differing characters highlighted</strong><div class="addressline">${highlighted(a.value,b.value)}</div><div class="meter" aria-label="Visual similarity indicator">${Array.from({length:10},(_,i)=>`<span class="${i < Math.min(10,Math.floor((prefix+suffix)/a.value.length*10))?'on':''}"></span>`).join("")}</div></div>`;
+    if (closeLookalike) {
+      show("warning", "!", "POSSIBLE LOOK-ALIKE", "The addresses are different but share matching characters at the beginning and end. This pattern can occur in address-poisoning attempts. Do not use the second address until you independently verify it.", extra);
+    } else {
+      show("danger", "×", "ADDRESS MISMATCH", "The complete addresses are different. Do not use the second address until you independently verify the recipient.", extra);
+    }
+  });
+
+  document.getElementById("clear").addEventListener("click", () => {
+    trustedEl.value = "";
+    candidateEl.value = "";
+    resultEl.className = "result";
+    resultEl.innerHTML = "";
+    trustedEl.focus();
+  });
+})();
+</script>
+
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
